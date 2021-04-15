@@ -3,9 +3,9 @@ package cdp
 
 import (
 	"context"
-	"log"
 	"time"
 
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 )
 
@@ -18,10 +18,12 @@ type CDP struct {
 	execOpts []chromedp.ExecAllocatorOption
 	// ctxOpts context 选项列表
 	ctxOpts []chromedp.ContextOption
+	// cookies
+	cookies []*network.CookieParam
 }
 
 // Run 启动并执行chrome
-func (self *CDP) Run(tasks chromedp.Tasks) error {
+func (self *CDP) Run(actions ...chromedp.Action) error {
 
 	ctx, cancel := chromedp.NewExecAllocator(context.Background(), self.getExecOptions()...)
 	defer cancel()
@@ -32,6 +34,13 @@ func (self *CDP) Run(tasks chromedp.Tasks) error {
 	ctx, cancel = context.WithTimeout(ctx, self.timeout)
 	defer cancel()
 
+	if len(self.cookies) > 0 {
+		if err := network.SetCookies(self.cookies).Do(ctx); err != nil {
+			return err
+		}
+	}
+
+	tasks := append(self.tasks, actions...)
 	return chromedp.Run(ctx, tasks...)
 }
 
@@ -119,17 +128,40 @@ func (self *CDP) WithTimeout(t time.Duration) *CDP {
 	return self
 }
 
+func (self *CDP) WithCookie(cookie network.CookieParam) *CDP {
+	self.cookies = append(self.cookies, &cookie)
+	return self
+}
+
+func (self *CDP) WithCookies(cookies []*network.CookieParam) *CDP {
+	if len(cookies) > 0 {
+		self.cookies = append(self.cookies, cookies...)
+	}
+
+	return self
+}
+
 // WithBrowserLog 设置启动浏览器日志
-func (self *CDP) WithBrowserLog() *CDP {
-	self.ctxOpts = append(self.ctxOpts, chromedp.WithDebugf(log.Printf), chromedp.WithLogf(log.Printf), chromedp.WithErrorf(log.Printf))
+func (self *CDP) WithBrowserDebugLog(f func(string, ...interface{})) *CDP {
+	self.ctxOpts = append(self.ctxOpts, chromedp.WithDebugf(f))
+	return self
+}
+
+func (self *CDP) WithBrowserErrorLog(f func(string, ...interface{})) *CDP {
+	self.ctxOpts = append(self.ctxOpts, chromedp.WithErrorf(f))
+	return self
+}
+
+func (self *CDP) WithBrowserInfoLog(f func(string, ...interface{})) *CDP {
+	self.ctxOpts = append(self.ctxOpts, chromedp.WithLogf(f))
 	return self
 }
 
 func NewCDP() *CDP {
 	return &CDP{
-		tasks:    chromedp.Tasks{},
+		tasks:    []chromedp.Action{},
 		execOpts: []chromedp.ExecAllocatorOption{},
 		ctxOpts:  []chromedp.ContextOption{},
-		timeout:  3 * time.Second,
+		timeout:  10 * time.Second,
 	}
 }
