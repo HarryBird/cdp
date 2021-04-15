@@ -62,6 +62,12 @@ func (self *Helper) InnerHTML(sel string, buf *string, opts ...chromedp.QueryOpt
 		Run()
 }
 
+func (self *Helper) FullScreen(quality int64, buf *[]byte) error {
+	return self.Init().
+		WithAction(NewAction().FullScreen(quality, buf)).
+		Run()
+}
+
 func (self *Helper) Init() *CDP {
 	chrome := NewCDP()
 
@@ -78,7 +84,7 @@ func (self *Helper) Init() *CDP {
 	}
 
 	if len(self.cookies) > 0 {
-		chrome.WithCookies(self.cookies)
+		chrome.WithAction(NewAction().SetCookies(self.cookies))
 	}
 
 	return chrome.WithAction(chromedp.Navigate(self.url))

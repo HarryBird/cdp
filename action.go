@@ -5,11 +5,28 @@ import (
 	"math"
 
 	"github.com/chromedp/cdproto/emulation"
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 )
 
-func FullScreen(quality int64, buf *[]byte) chromedp.Action {
+type Action struct{}
+
+func NewAction() *Action {
+	return &Action{}
+}
+
+func (self *Action) SetCookies(cookies []*network.CookieParam) chromedp.Action {
+	return chromedp.ActionFunc(func(ctx context.Context) error {
+		if err := network.SetCookies(cookies).Do(ctx); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (self *Action) FullScreen(quality int64, buf *[]byte) chromedp.Action {
 	return chromedp.ActionFunc(func(ctx context.Context) error {
 		// get layout metrics
 		_, _, cssContentSize, err := page.GetLayoutMetrics().Do(ctx)

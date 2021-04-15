@@ -5,7 +5,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 )
 
@@ -18,8 +17,6 @@ type CDP struct {
 	execOpts []chromedp.ExecAllocatorOption
 	// ctxOpts context 选项列表
 	ctxOpts []chromedp.ContextOption
-	// cookies
-	cookies []*network.CookieParam
 }
 
 // Run 启动并执行chrome
@@ -33,12 +30,6 @@ func (self *CDP) Run(actions ...chromedp.Action) error {
 
 	ctx, cancel = context.WithTimeout(ctx, self.timeout)
 	defer cancel()
-
-	if len(self.cookies) > 0 {
-		if err := network.SetCookies(self.cookies).Do(ctx); err != nil {
-			return err
-		}
-	}
 
 	tasks := append(self.tasks, actions...)
 	return chromedp.Run(ctx, tasks...)
@@ -125,19 +116,6 @@ func (self *CDP) WithFlag(name string, value interface{}) *CDP {
 // WithTimeout 设置整体执行时长
 func (self *CDP) WithTimeout(t time.Duration) *CDP {
 	self.timeout = t
-	return self
-}
-
-func (self *CDP) WithCookie(cookie network.CookieParam) *CDP {
-	self.cookies = append(self.cookies, &cookie)
-	return self
-}
-
-func (self *CDP) WithCookies(cookies []*network.CookieParam) *CDP {
-	if len(cookies) > 0 {
-		self.cookies = append(self.cookies, cookies...)
-	}
-
 	return self
 }
 
