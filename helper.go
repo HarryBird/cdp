@@ -1,6 +1,8 @@
 package cdp
 
 import (
+	"time"
+
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 	"github.com/mitchellh/mapstructure"
@@ -86,6 +88,8 @@ func (self *Helper) Init() *CDP {
 	if len(self.cookies) > 0 {
 		chrome.WithAction(NewAction().SetCookies(self.cookies))
 	}
+
+	chrome.WithoutHeadless().WithTimeout(30 * time.Second)
 
 	return chrome.WithAction(chromedp.Navigate(self.url))
 }
